@@ -1,0 +1,152 @@
+from pathlib import Path
+import zipfile, textwrap
+
+base = Path("/mnt/data/tino-esign")
+base.mkdir(parents=True, exist_ok=True)
+
+files = {
+"index.html": r'''<!doctype html>
+<html lang="km">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080b14">
+  <title>TINO eSign</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand-mark">T</div>
+    <div><div class="brand">TINO <span>eSign</span></div><div class="sub">iOS IPA SIGNING WORKSPACE</div></div>
+    <div class="status"><i></i> READY</div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow">PRO EDITION · IOS</div>
+      <h1>Sign your<br><span>IPA files.</span></h1>
+      <p>រៀបចំឯកសារ IPA និងព័ត៌មាន Certificate របស់អ្នកនៅកន្លែងតែមួយ។</p>
+    </section>
+
+    <section class="panel">
+      <div class="section-head"><span class="number">01</span><div><h2>IPA FILE</h2><p>ជ្រើសរើសកម្មវិធី .ipa</p></div></div>
+      <label class="upload" for="ipa"><span class="upload-icon">↑</span><strong id="ipaName">Choose IPA file</strong><small>Tap to browse Files · .ipa</small></label>
+      <input id="ipa" type="file" accept=".ipa,application/octet-stream" hidden>
+    </section>
+
+    <section class="panel">
+      <div class="section-head"><span class="number">02</span><div><h2>SIGNING CERTIFICATE</h2><p>ជ្រើសរើស Certificate .p12</p></div></div>
+      <label class="upload compact" for="p12"><span class="upload-icon">＋</span><strong id="p12Name">Import .p12 certificate</strong><small>Certificate file</small></label>
+      <input id="p12" type="file" accept=".p12,.pfx" hidden>
+      <label class="field-label" for="password">Certificate password</label>
+      <input id="password" class="text-field" type="password" placeholder="Enter locally when a trusted signer is connected" autocomplete="off">
+      <p class="privacy">កុំផ្ញើ Certificate ឬ Password ទៅអ្នកដទៃ។ កុំបញ្ចូលវានៅលើគេហទំព័រដែលមិនទុកចិត្ត។</p>
+    </section>
+
+    <section class="panel">
+      <div class="section-head"><span class="number">03</span><div><h2>PROVISIONING PROFILE</h2><p>ជ្រើសរើស .mobileprovision</p></div></div>
+      <label class="upload compact" for="profile"><span class="upload-icon">＋</span><strong id="profileName">Import provisioning profile</strong><small>.mobileprovision</small></label>
+      <input id="profile" type="file" accept=".mobileprovision" hidden>
+    </section>
+
+    <section class="action-panel">
+      <button id="signBtn" disabled>PREPARE SIGNING <span>→</span></button>
+      <p id="message" role="status">ជ្រើសរើសឯកសារទាំងបី ដើម្បីពិនិត្យភាពត្រៀមរួច។</p>
+    </section>
+
+    <section class="notice">
+      <strong>Important</strong>
+      <p>នេះជាផ្ទាំង PWA សម្រាប់រៀបចំឯកសារ មិនទាន់មាន Signing Engine ទេ។ Safari មិនអាចចុះហត្ថលេខា IPA ដោយខ្លួនឯងបានឡើយ។ ត្រូវការម៉ាស៊ីន Sign ដែលទុកចិត្តបាន និងការចុះហត្ថលេខាត្រឹមត្រូវតាមលក្ខខណ្ឌ Apple។</p>
+    </section>
+  </main>
+
+  <footer> TINO eSign <span>•</span> Built for iPhone</footer>
+  <script src="app.js"></script>
+</body>
+</html>
+''',
+"styles.css": r'''*{box-sizing:border-box} :root{color-scheme:dark;--bg:#080b14;--panel:#111827;--line:#243149;--blue:#39a5ff;--muted:#91a0b8} body{margin:0;background:radial-gradient(ellipse at 80% 0%,#102746 0,transparent 36%),var(--bg);color:#f5f8ff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 18px env(safe-area-inset-bottom)}.top{max-width:650px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:22px 0}.brand-mark{width:42px;height:42px;border:1px solid #278ee7;border-radius:13px;display:grid;place-items:center;color:#55b4ff;font-weight:900;font-size:23px;background:#0c1c31;box-shadow:0 0 24px #1689ff30}.brand{font-weight:900;letter-spacing:1px}.brand span{color:var(--blue)}.sub{font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-top:3px}.status{margin-left:auto;color:#8fd8b0;font-size:10px;letter-spacing:1px}.status i{display:inline-block;width:6px;height:6px;background:#55d99a;border-radius:50%;margin-right:5px}main{max-width:650px;margin:auto}.hero{padding:35px 4px 25px}.eyebrow{color:var(--blue);font-size:10px;letter-spacing:2px;font-weight:800}.hero h1{font-size:clamp(42px,12vw,66px);line-height:.98;letter-spacing:-2px;margin:13px 0}.hero h1 span{color:var(--blue)}.hero p{color:var(--muted);font-size:14px;line-height:1.7;max-width:430px}.panel{background:linear-gradient(145deg,#141e30,#0d1421);border:1px solid var(--line);border-radius:18px;padding:18px;margin:13px 0}.section-head{display:flex;align-items:center;gap:12px;margin-bottom:15px}.number{color:var(--blue);font-size:12px;font-weight:800;border:1px solid #24517c;border-radius:9px;padding:8px}.section-head h2{font-size:12px;letter-spacing:1px;margin:0 0 4px}.section-head p{font-size:11px;color:var(--muted);margin:0}.upload{min-height:112px;border:1px dashed #37618b;border-radius:13px;background:#0b1727;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;cursor:pointer}.upload.compact{min-height:85px}.upload-icon{font-size:21px;color:var(--blue)}.upload strong{font-size:13px}.upload small{font-size:10px;color:var(--muted)}.field-label{display:block;font-size:11px;color:#b9c8dc;margin:16px 0 7px}.text-field{width:100%;background:#080e19;border:1px solid var(--line);border-radius:10px;padding:13px;color:white;font-size:13px;outline:none}.text-field:focus{border-color:var(--blue)}.privacy{font-size:10px;line-height:1.6;color:#8fa0b7}.action-panel{padding:8px 0 12px}.action-panel button{width:100%;border:0;border-radius:13px;padding:17px;background:linear-gradient(100deg,#147bd1,#36a9ff);color:#04101d;font-weight:900;letter-spacing:1px;font-size:12px}.action-panel button:disabled{opacity:.42}.action-panel button span{float:right;font-size:18px;line-height:12px}.action-panel p{font-size:11px;color:var(--muted);text-align:center;line-height:1.6}.notice{border:1px solid #59482a;background:#201b12;border-radius:13px;padding:14px 16px;margin:12px 0 28px}.notice strong{font-size:11px;color:#ffc66e;letter-spacing:1px}.notice p{font-size:11px;line-height:1.7;color:#c8b99e;margin:7px 0 0}footer{text-align:center;color:#62718a;font-size:10px;padding:12px 0 28px;letter-spacing:1px}footer span{color:var(--blue)}'''
+,
+"app.js": r'''const fields = [
+  ["ipa", "ipaName"],
+  ["p12", "p12Name"],
+  ["profile", "profileName"]
+];
+const message = document.getElementById("message");
+const button = document.getElementById("signBtn");
+
+function update() {
+  let ready = true;
+  for (const [inputId, labelId] of fields) {
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    if (input.files.length) {
+      label.textContent = input.files[0].name;
+    } else {
+      ready = false;
+    }
+  }
+  button.disabled = !ready;
+  message.textContent = ready
+    ? "ឯកសារទាំងបីត្រូវបានជ្រើសរើស។ Signing Engine មិនទាន់បានភ្ជាប់ទេ។"
+    : "សូមជ្រើសរើស IPA, .p12 និង .mobileprovision។";
+}
+fields.forEach(([id]) => document.getElementById(id).addEventListener("change", update));
+button.addEventListener("click", () => {
+  message.textContent = "នេះជាគំរូ Interface ប៉ុណ្ណោះ។ មិនមានការចុះហត្ថលេខា ឬបង្កើត IPA ថ្មីទេ។ ត្រូវភ្ជាប់ Signing Engine ដែលមានសុវត្ថិភាពជាមុន។";
+});
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+}
+''',
+"manifest.webmanifest": r'''{
+  "name": "TINO eSign",
+  "short_name": "TINO eSign",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080b14",
+  "theme_color": "#080b14",
+  "description": "TINO eSign IPA signing workspace"
+}''',
+"sw.js": r'''const CACHE = "tino-esign-v1";
+const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest"];
+self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));
+self.addEventListener("fetch", event => event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request))));
+''',
+"README-KM.txt": r'''TINO eSign — Starter PWA
+
+អ្វីដែលមានក្នុង Project នេះ
+- Interface Black + Electric Blue
+- ជ្រើសរើស IPA, .p12 និង .mobileprovision
+- PWA manifest និង service worker សម្រាប់ Add to Home Screen
+- រចនាឡើងសម្រាប់អេក្រង់ iPhone
+
+ដែនកំណត់សំខាន់
+នេះមិនមែនជា IPA signer ដែលដំណើរការពេញលេញទេ។ វាមិន Sign ឬ modify IPA ឡើយ។
+Safari មិនអាចជំនួស signing tools និង Apple signing infrastructure បានទេ។
+ដើម្បីបន្ថែមការចុះហត្ថលេខាពិត ត្រូវការ backend ដែលមានសុវត្ថិភាព ឬ native build pipeline,
+ការគ្រប់គ្រង private key ត្រឹមត្រូវ និង certificate/profile ដែល Apple អនុញ្ញាត។
+កុំ upload .p12 ឬ password ទៅ server ដែលមិនទុកចិត្ត។
+
+ដាក់ឱ្យប្រើលើ iPhone
+1. Upload folder នេះទៅ static hosting ដែលមាន HTTPS។
+2. បើក URL តាម Safari។
+3. ចុច Share > Add to Home Screen។
+4. វានឹងបន្ថែម shortcut ជា web app; វាមិនមែនជា native IPA install ទេ។
+
+សម្រាប់ Native iOS IPA
+ត្រូវ Build និង sign native app ដោយប្រើ Xcode/macOS ឬសេវា build ដែលទុកចិត្តបាន។
+ការដំឡើង wireless តាម Apple manifest មានលក្ខខណ្ឌ signing និង distribution របស់ Apple។
+'''
+}
+
+for name, content in files.items():
+    (base / name).write_text(content, encoding="utf-8")
+
+zip_path = Path("/mnt/data/TINO-eSign-Starter.zip")
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+    for p in base.rglob("*"):
+        if p.is_file():
+            z.write(p, p.relative_to(base.parent))
+print(f"Created {zip_path} ({zip_path.stat().st_size} bytes)")
